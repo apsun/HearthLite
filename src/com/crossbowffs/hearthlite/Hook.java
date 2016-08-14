@@ -80,7 +80,6 @@ public class Hook implements IXposedHookLoadPackage {
         XposedHelpers.findAndHookMethod(cls, "ExtractAssetsFromObb", String.class, Thread.class, new XC_MethodHook() {
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                final Object self = param.thisObject;
                 final String obbPath = (String)param.args[0];
                 final Thread thread = (Thread)param.getResult();
                 new Thread(new Runnable() {
@@ -94,23 +93,21 @@ public class Hook implements IXposedHookLoadPackage {
                             return;
                         }
 
-                        if (isObbExtracted(self)) {
-                            Log.i(TAG, "OBB download tokens already exist");
-                            return;
-                        }
-
                         String tokenPath = getObbTokenPath(obbPath);
-                        Log.i(TAG, "Creating OBB download token: " + tokenPath);
+                        Log.i(TAG, "Trying to create OBB download token: " + tokenPath);
+                        boolean created;
                         try {
-                            new File(tokenPath).createNewFile();
+                            created = new File(tokenPath).createNewFile();
                         } catch (IOException e) {
                             Log.e(TAG, "Failed to create OBB download token", e);
                             return;
                         }
 
-                        Log.i(TAG, "Deleting OBB file: " + obbPath);
-                        if (!new File(obbPath).delete()) {
-                            Log.e(TAG, "Could not delete OBB file");
+                        if (created) {
+                            Log.i(TAG, "Deleting OBB file: " + obbPath);
+                            if (!new File(obbPath).delete()) {
+                                Log.e(TAG, "Could not delete OBB file");
+                            }
                         }
                     }
                 }).start();
